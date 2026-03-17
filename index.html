@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OC 生辰八字生成器</title>
+    
+    <!-- 引入资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 引入自定义样式 -->
+    <link rel="stylesheet" href="./styles.css">
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'china-bg': '#FDF9F1',
+                        'china-paper': '#F5EBD9',
+                        'china-red': '#8A151B',
+                        'china-gold': '#B38B4D',
+                        'china-ink': '#2C2A28',
+                        'china-gray': '#7D7A75'
+                    },
+                    fontFamily: {
+                        serif:['"Noto Serif SC"', '"Songti SC"', 'STSong', 'serif'],
+                        sans:['"PingFang SC"', '"Microsoft YaHei"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-china-bg text-china-ink font-serif antialiased overflow-hidden selection:bg-china-gold selection:text-white">
+
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-china-paper to-transparent opacity-80"></div>
+        <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-china-paper to-transparent opacity-80"></div>
+        <!-- 简单的边框装饰 -->
+        <div class="absolute inset-4 border border-china-gold/20 rounded-lg"></div>
+    </div>
+
+    <!-- 主容器 -->
+    <main id="app-container" class="relative z-10 w-full max-w-lg mx-auto h-screen flex flex-col items-center justify-center p-6">
+        
+        <!-- 首页视图 -->
+        <div id="view-start" class="w-full flex flex-col items-center text-center space-y-8 absolute inset-x-0 px-6">
+            <div class="w-20 h-20 rounded-full bg-china-paper border border-china-gold/40 flex items-center justify-center shadow-sm">
+                <i data-lucide="scroll" class="text-china-gold w-10 h-10"></i>
+            </div>
+            <div class="space-y-4">
+                <h1 class="text-3xl tracking-widest font-bold text-china-ink">OC八字溯源</h1>
+                <p class="text-china-gray text-sm tracking-widest">通过性格与命运抉择，推演属于TA的三柱命理</p>
+            </div>
+            <button id="btn-start" class="mt-8 px-12 py-3 bg-china-red text-white tracking-widest rounded transition-all hover:bg-red-800 hover:shadow-lg hover:shadow-china-red/20 active:scale-95">
+                开始测算
+            </button>
+        </div>
+
+        <!-- 答题视图 -->
+        <div id="view-question" class="w-full flex flex-col absolute inset-x-0 px-6 hidden opacity-0">
+            <!-- 进度条 -->
+            <div class="w-full flex items-center justify-between mb-8">
+                <span id="progress-text" class="text-xs text-china-gray tracking-widest font-sans">1 / 50</span>
+                <div class="flex-1 ml-4 h-1 bg-china-paper rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-china-gold transition-all duration-300 ease-out" style="width: 2%"></div>
+                </div>
+            </div>
+
+            <!-- 题目区域 -->
+            <div class="bg-white/50 backdrop-blur-sm border border-china-gold/20 p-8 rounded shadow-sm relative min-h-[300px] flex flex-col">
+                <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 bg-china-bg text-china-gold text-xs tracking-widest font-sans">
+                    第 <span id="q-index-display">一</span> 问
+                </div>
+                <h2 id="question-text" class="text-xl leading-relaxed mb-8 mt-2">题目加载中...</h2>
+                <div id="options-container" class="space-y-4 mt-auto">
+                    <!-- 选项将由JS动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果视图 -->
+        <div id="view-result" class="w-full h-full flex flex-col items-center justify-start pt-12 absolute inset-x-0 px-6 hidden opacity-0 overflow-y-auto pb-12">
+            <h2 class="text-sm text-china-gray tracking-[0.3em] mb-2 font-sans">命盘推演结果</h2>
+            <div class="w-full bg-china-paper border border-china-gold/30 p-6 rounded shadow-sm text-center mb-6">
+                <h3 class="text-2xl font-bold tracking-widest mb-6">三柱排盘</h3>
+                
+                <div class="flex justify-center space-x-6 text-xl tracking-widest mb-4">
+                    <div class="flex flex-col items-center space-y-2">
+                        <span class="text-xs text-china-gray">月柱</span>
+                        <span id="res-month-stem" class="text-china-red font-bold"></span>
+                        <span id="res-month-branch" class="text-china-ink font-bold"></span>
+                    </div>
+                    <div class="w-px h-16 bg-china-gold/30"></div>
+                    <div class="flex flex-col items-center space-y-2">
+                        <span class="text-xs text-china-gray">日柱 (主干)</span>
+                        <span id="res-day-stem" class="text-china-red font-bold text-2xl"></span>
+                        <span id="res-day-branch" class="text-china-ink font-bold text-2xl"></span>
+                    </div>
+                    <div class="w-px h-16 bg-china-gold/30"></div>
+                    <div class="flex flex-col items-center space-y-2">
+                        <span class="text-xs text-china-gray">时柱</span>
+                        <span id="res-hour-stem" class="text-china-red font-bold"></span>
+                        <span id="res-hour-branch" class="text-china-ink font-bold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full space-y-6 text-left">
+                <div>
+                    <h4 class="text-china-gold text-sm tracking-widest mb-2 flex items-center">
+                        <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i> 核心性格 (日柱)
+                    </h4>
+                    <p id="res-character" class="text-sm leading-relaxed text-china-ink/90 bg-white/40 p-4 rounded border border-white/60"></p>
+                </div>
+                <div>
+                    <h4 class="text-china-gold text-sm tracking-widest mb-2 flex items-center">
+                        <i data-lucide="book-open" class="w-4 h-4 mr-2"></i> 命理批注
+                    </h4>
+                    <p id="res-reading" class="text-sm leading-relaxed text-china-ink/90 bg-white/40 p-4 rounded border border-white/60"></p>
+                </div>
+            </div>
+            
+            <button onclick="location.reload()" class="mt-8 px-8 py-2 border border-china-gold text-china-gold tracking-widest rounded text-sm hover:bg-china-gold hover:text-white transition-all">
+                重新推演
+            </button>
+        </div>
+
+    </main>
+
+    <script type="module" src="./app.js"></script>
+</body>
+</html>
